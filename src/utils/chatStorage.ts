@@ -1,5 +1,5 @@
 // 存储 chatLogs
-import { ChatLogsType, ChatLogsStorageType } from "@/types";
+import { MessageList, ChatLogsStorageType } from "@/types";
 import { getLocalStorage, setLocalStorage } from "./storage";
 
 const CHAT_LOGS_STORAGES_KEY = "ai_chatLogs";
@@ -19,7 +19,7 @@ export const getChatLogs = (key: string) => {
     return list[key] || [];
 };
 
-export const updateChatLogs = (key: string, logs: ChatLogsType) => {
+export const updateChatLogs = (key: string, logs: MessageList) => {
     const list = getChatLogsContainer();
     list[key] = logs;
     setLocalStorage(CHAT_LOGS_STORAGES_KEY, list);

@@ -1,12 +1,12 @@
-import { type } from "os";
+export type Role = "user" | "assistant" | "system";
 
-export type ChatLogType = {
-    role: string;
+export type Message = {
+    role: Role;
     content: string;
 }
 
-export type ChatLogsType = ChatLogType[];
+export type MessageList = Message[];
 
 export type ChatLogsStorageType = {
-    [key: string]: ChatLogsType;
+    [key: string]: MessageList;
 }

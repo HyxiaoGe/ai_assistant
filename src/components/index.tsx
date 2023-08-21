@@ -1,11 +1,10 @@
 import { KeyboardEvent, useEffect, useState } from 'react';
-import { getCompletion } from '@/utils/getCompletion';
+import chatService from '@/utils/chatService';
 import { ActionIcon, Textarea } from '@mantine/core';
-import { ChatLogsType } from '@/types';
+import { MessageList } from '@/types';
 import clsx from 'clsx';
 import { getChatLogs, updateChatLogs, removeChatLogs } from '@/utils/chatStorage';
-import { IconSend, IconEraser } from '@tabler/icons-react';
-import { clear } from 'console';
+import { IconSend, IconSendOff, IconEraser } from '@tabler/icons-react';
 
 const LOCAL_KEY = "ai_demo";
 
@@ -13,8 +12,14 @@ export const Chat = () => {
     
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState<boolean>(false);
-    const [completion, setCompletion] = useState<string>('');
-    const [chatList, setChatList] = useState<ChatLogsType>([]);
+    const [chatList, setChatList] = useState<MessageList>([]);
+
+    chatService.actions = {
+        onCompleting: (sug) => setSuggestions(sug),
+        onCompleted: () => {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
         const logs = getChatLogs(LOCAL_KEY);
@@ -29,39 +34,46 @@ export const Chat = () => {
     const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.keyCode === 13 && !event.shiftKey) {
             event.preventDefault();
-            getAIResp();
+            onSubmit();
         }
     };
 
-    const setChatLogs = (logs: ChatLogsType) => {
-        setChatList(logs);
-        updateChatLogs(LOCAL_KEY, logs);
+    const setSuggestions = (suggestions: string) => {
+
+        if (suggestions === '') return;
+        const len = chatList.length;
+        const lastMessage = len ? chatList[len - 1] : null;
+        let newList: MessageList = [];
+        if (lastMessage?.role === 'assistant') {
+            newList = [...chatList.slice(0, len - 1), {...lastMessage, content: suggestions}];
+        } else {
+            newList = [...chatList, {role: 'assistant', content: suggestions}];
+        }
+        setMessage(newList);
     };
 
-    const getAIResp = async () => {
-        setLoading(true);
-        const list = [
+    const setMessage = (msg: MessageList) => {
+        setChatList(msg);
+        updateChatLogs(LOCAL_KEY, msg);
+    };
+
+    const onSubmit = () => {
+        if (loading) {
+            return chatService.cancel();
+        }
+        if (!prompt.trim()) return;
+        let list: MessageList = [
             ...chatList,
             {
-                role: "user",
-                content: prompt
+            role: "user",
+            content: prompt,
             },
-        ]
-        setChatLogs(list);
-        const resp = await getCompletion({
-            prompt: prompt
-        });
-        setPrompt('');
-        setCompletion(resp.content);
-        setChatLogs([
-            ...list,
-            {
-                role: "assistant",
-                content: resp.content
-            },
-        ]);
-        setLoading(false);
-    };
+        ];
+        setMessage(list);
+        setLoading(true);
+        chatService.getStream({prompt, history: list.slice(-6)});
+        setPrompt("");
+    }
 
     return (
         <div className='h-screen flex flex-col items-center'>
@@ -118,10 +130,11 @@ export const Chat = () => {
             </Textarea>
             <ActionIcon
              className='ml-2'
-             loading={loading}
-             onClick={() => getAIResp()}
+             onClick={() => onSubmit()}
              >
-                <IconSend></IconSend>
+                {
+                    loading ? <IconSendOff/> : <IconSend/>
+                }
                 </ActionIcon>
             </div>
         </div>
