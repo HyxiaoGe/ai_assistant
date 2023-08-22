@@ -1,10 +1,11 @@
 import { KeyboardEvent, useEffect, useState } from 'react';
 import chatService from '@/utils/chatService';
-import { ActionIcon, Textarea } from '@mantine/core';
+import { ActionIcon, Textarea, Button, Popover } from '@mantine/core';
+import Link from 'next/link';
 import { MessageList } from '@/types';
 import clsx from 'clsx';
 import * as chatStorage from '@/utils/chatStorage';
-import { IconSend, IconSendOff, IconEraser } from '@tabler/icons-react';
+import { IconSend, IconSendOff, IconEraser,IconDotsVertical } from '@tabler/icons-react';
 
 type Props = {
     sessionId: string;
@@ -85,7 +86,34 @@ export const Message = ({sessionId}: Props) => {
     }
 
     return (
-        <div className='h-screen flex flex-col items-center w-full'>
+        <div className='h-screen flex flex-col w-full'>
+            <div
+                className={clsx([
+                    "flex",
+                    "justify-between",
+                    "items-center",
+                    "p-4",
+                    "shadow-sm",
+                    "h-[6rem]"
+                ])}
+            >
+                <Popover width={100} position="bottom" withArrow shadow="sm">
+                    <Popover.Target>
+                        <Button 
+                        size="sm" 
+                        variant="subtle"
+                        className='px-1'
+                        rightIcon={<IconDotsVertical size="1rem"></IconDotsVertical>}
+                        >
+                            AI 助理
+                        </Button>
+                    </Popover.Target>
+                    <Popover.Dropdown>
+                        <Link href="/assistant">助理管理</Link>
+                    </Popover.Dropdown>
+                </Popover>
+                <div>助理选择</div>
+            </div>
             <div 
                 className={clsx([
                     'flex-col',

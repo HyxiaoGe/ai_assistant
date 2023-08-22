@@ -3,6 +3,7 @@
         "clsx",
         "Edittable",
         "Mantine",
-        "OPENAI"
+        "OPENAI",
+        "tabler"
     ]
 }
