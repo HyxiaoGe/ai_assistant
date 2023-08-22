@@ -17,3 +17,15 @@ export type SessionList = Session[];
 export type ChatLogsStorageType = {
     [key: string]: MessageList;
 }
+
+export type Assistant = {
+    name: string;
+    id: string;
+    description?: string;
+    prompt: string;
+    temperature?: number;
+    max_log: number;
+    max_tokens: number;
+};
+
+export type AssistantList = Assistant[];
