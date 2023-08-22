@@ -14,7 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
     setColorScheme(value || (colorScheme === "dark" ? "light" : "dark"));
   };
   return (
-  <ColorSchemeProvider colorScheme="dark" toggleColorScheme={toggleColorScheme}>
+  <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
     <MantineProvider theme={{ colorScheme, primaryColor:"green" }}  withNormalizeCSS withGlobalStyles>
     <Notifications position='top-right' zIndex={2077}></Notifications>
     <Component {...pageProps} />

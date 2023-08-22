@@ -1,4 +1,4 @@
-import { Chat } from "@/components"
+import { Chat } from "@/components/Chat"
 
 export default function Home() {
   return (

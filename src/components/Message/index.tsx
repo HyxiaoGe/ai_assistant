@@ -3,16 +3,23 @@ import chatService from '@/utils/chatService';
 import { ActionIcon, Textarea } from '@mantine/core';
 import { MessageList } from '@/types';
 import clsx from 'clsx';
-import { getChatLogs, updateChatLogs, removeChatLogs } from '@/utils/chatStorage';
+import * as chatStorage from '@/utils/chatStorage';
 import { IconSend, IconSendOff, IconEraser } from '@tabler/icons-react';
 
-const LOCAL_KEY = "ai_demo";
+type Props = {
+    sessionId: string;
+}
 
-export const Chat = () => {
+export const Message = ({sessionId}: Props) => {
     
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState<boolean>(false);
-    const [chatList, setChatList] = useState<MessageList>([]);
+    const [message, setMessage] = useState<MessageList>([]);
+
+    const updateMessage = (msg: MessageList) => {
+        setMessage(msg);
+        chatStorage.updateMessage(sessionId, msg);
+    }
 
     chatService.actions = {
         onCompleting: (sug) => setSuggestions(sug),
@@ -22,13 +29,15 @@ export const Chat = () => {
     }
 
     useEffect(() => {
-        const logs = getChatLogs(LOCAL_KEY);
-        setChatList(logs);
-    }, [])
+        const msg = chatStorage.getMessage(sessionId);
+        setMessage(msg);
+        if (loading) {
+            chatService.cancel();
+        }
+    }, [sessionId]);
 
     const onClear = () => {
-        removeChatLogs(LOCAL_KEY);
-        setChatList([]);
+        updateMessage([]);
     }
 
     const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -41,20 +50,20 @@ export const Chat = () => {
     const setSuggestions = (suggestions: string) => {
 
         if (suggestions === '') return;
-        const len = chatList.length;
-        const lastMessage = len ? chatList[len - 1] : null;
+        const len = message.length;
+        const lastMessage = len ? message[len - 1] : null;
         let newList: MessageList = [];
         if (lastMessage?.role === 'assistant') {
-            newList = [...chatList.slice(0, len - 1), {...lastMessage, content: suggestions}];
+            newList = [...message.slice(0, len - 1), {...lastMessage, content: suggestions}];
         } else {
-            newList = [...chatList, {role: 'assistant', content: suggestions}];
+            newList = [...message, {role: 'assistant', content: suggestions}];
         }
-        setMessage(newList);
+        setMessages(newList);
     };
 
-    const setMessage = (msg: MessageList) => {
-        setChatList(msg);
-        updateChatLogs(LOCAL_KEY, msg);
+    const setMessages = (msg: MessageList) => {
+        setMessage(msg);
+        chatStorage.updateMessage(sessionId, msg);
     };
 
     const onSubmit = () => {
@@ -63,20 +72,20 @@ export const Chat = () => {
         }
         if (!prompt.trim()) return;
         let list: MessageList = [
-            ...chatList,
+            ...message,
             {
             role: "user",
             content: prompt,
             },
         ];
-        setMessage(list);
+        setMessages(list);
         setLoading(true);
         chatService.getStream({prompt, history: list.slice(-6)});
         setPrompt("");
     }
 
     return (
-        <div className='h-screen flex flex-col items-center'>
+        <div className='h-screen flex flex-col items-center w-full'>
             <div 
                 className={clsx([
                     'flex-col',
@@ -87,7 +96,7 @@ export const Chat = () => {
                     'px-8',
                 ])}
             >
-                {chatList.map((item, index) => (
+                {message.map((item, index) => (
                     <div key={`${item.role}-${index}`} className={clsx(
                         {
                             flex: item.role === 'user',
