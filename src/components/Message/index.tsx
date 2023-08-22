@@ -2,10 +2,11 @@ import { KeyboardEvent, useEffect, useState } from 'react';
 import chatService from '@/utils/chatService';
 import { ActionIcon, Textarea, Button, Popover } from '@mantine/core';
 import Link from 'next/link';
-import { MessageList } from '@/types';
+import { Assistant, MessageList } from '@/types';
 import clsx from 'clsx';
 import * as chatStorage from '@/utils/chatStorage';
 import { IconSend, IconSendOff, IconEraser,IconDotsVertical } from '@tabler/icons-react';
+import { AssistantSelect } from '../AssistantSelect';
 
 type Props = {
     sessionId: string;
@@ -16,6 +17,7 @@ export const Message = ({sessionId}: Props) => {
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState<boolean>(false);
     const [message, setMessage] = useState<MessageList>([]);
+    const [assistant, setAssistant] = useState<Assistant>();
 
     const updateMessage = (msg: MessageList) => {
         setMessage(msg);
@@ -31,11 +33,23 @@ export const Message = ({sessionId}: Props) => {
 
     useEffect(() => {
         const msg = chatStorage.getMessage(sessionId);
+        const session = chatStorage.getSession(sessionId);
+        if (session) {
+            setAssistant(session.assistant);
+        }
+
         setMessage(msg);
         if (loading) {
             chatService.cancel();
         }
     }, [sessionId]);
+
+    const onAddAssistantChange = (assistant: Assistant) => {
+        setAssistant(assistant);
+        chatStorage.updateSession(sessionId, {
+            assistant: assistant.id,
+        });
+    }
 
     const onClear = () => {
         updateMessage([]);
@@ -81,7 +95,11 @@ export const Message = ({sessionId}: Props) => {
         ];
         setMessages(list);
         setLoading(true);
-        chatService.getStream({prompt, history: list.slice(-6)});
+        chatService.getStream({
+            prompt, 
+            options: assistant,
+            history: list.slice(-assistant?.max_log!)
+        });
         setPrompt("");
     }
 
@@ -112,7 +130,10 @@ export const Message = ({sessionId}: Props) => {
                         <Link href="/assistant">助理管理</Link>
                     </Popover.Dropdown>
                 </Popover>
-                <div>助理选择</div>
+                <AssistantSelect 
+                value={assistant?.id} 
+                onChange={onAddAssistantChange}>
+                </AssistantSelect>
             </div>
             <div 
                 className={clsx([

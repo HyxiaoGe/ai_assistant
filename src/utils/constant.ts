@@ -2,6 +2,9 @@ export const MESSAGE_STORE = "ai_assistant_message"
 export const SESSION_STORE = "ai_assistant_session"
 export const ASSISTANT_STORE = "ai_assistant"
 
+export const MAX_TOKENS = 1000;
+export const TEMPERATURE = 0.8;
+
 export const ASSISTANT_INIT = [
     {
         name: "AI 助手",
