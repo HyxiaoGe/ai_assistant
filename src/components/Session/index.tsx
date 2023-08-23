@@ -5,10 +5,12 @@ import { IconTrash, IconMessagePlus } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { EdittableText } from "../EdittableText";
 import { useMantineColorScheme, ActionIcon } from "@mantine/core";
+import assistantStore from "@/utils/assistantStore";
 
 type Props = {
     sessionId: string;
     onChange: (arg: string) => void;
+    className?: string;
 }
 
 const itemBaseClasses =
@@ -32,7 +34,7 @@ const generateItemClasses = (
     ]);
   };
 
-export const Session = ({ sessionId, onChange }: Props) => {
+export const Session = ({ sessionId, onChange, className }: Props) => {
     const [sessionList, setSessionList] = useState<SessionList>([]);
     const { colorScheme } = useMantineColorScheme();
 
@@ -42,8 +44,10 @@ export const Session = ({ sessionId, onChange }: Props) => {
     }, []);
 
     const createSession = () => {
-        const newSession = {
+        const assistantList = assistantStore.getList();
+        const newSession: ISession  = {
             name: `session-${sessionList.length + 1}`,
+            assistant: assistantList[0].id,
             id: Date.now().toString(),
         };
         onChange(newSession.id);
@@ -76,6 +80,7 @@ export const Session = ({ sessionId, onChange }: Props) => {
             "flex",
             "flex-col",
             "px-2",
+            className,
         )}
         >
             <div className="flex justify-between py-2 w-full">

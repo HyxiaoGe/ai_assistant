@@ -14,3 +14,9 @@ export const ASSISTANT_INIT = [
         max_tokens: 800,
     },
 ];
+
+export const USERMAP = {
+    user: "👨‍💻‍",
+    assistant: "🤖",
+    system: "🕸",
+  };

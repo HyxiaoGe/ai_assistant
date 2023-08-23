@@ -1,12 +1,15 @@
 import { KeyboardEvent, useEffect, useState } from 'react';
 import chatService from '@/utils/chatService';
-import { ActionIcon, Textarea, Button, Popover } from '@mantine/core';
+import { Loader, ActionIcon, Textarea, Button, Popover, useMantineColorScheme } from '@mantine/core';
 import Link from 'next/link';
 import { Assistant, MessageList } from '@/types';
 import clsx from 'clsx';
 import * as chatStorage from '@/utils/chatStorage';
 import { IconSend, IconSendOff, IconEraser,IconDotsVertical } from '@tabler/icons-react';
 import { AssistantSelect } from '../AssistantSelect';
+import { Markdown } from "../Markdown";
+import { ThemeSwitch } from "../ThemeSwitch";
+import { USERMAP } from "@/utils/constant";
 
 type Props = {
     sessionId: string;
@@ -18,6 +21,7 @@ export const Message = ({sessionId}: Props) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [message, setMessage] = useState<MessageList>([]);
     const [assistant, setAssistant] = useState<Assistant>();
+    const { colorScheme } = useMantineColorScheme();
 
     const updateMessage = (msg: MessageList) => {
         setMessage(msg);
@@ -44,7 +48,7 @@ export const Message = ({sessionId}: Props) => {
         }
     }, [sessionId]);
 
-    const onAddAssistantChange = (assistant: Assistant) => {
+    const onAssistantChange = (assistant: Assistant) => {
         setAssistant(assistant);
         chatStorage.updateSession(sessionId, {
             assistant: assistant.id,
@@ -104,97 +108,128 @@ export const Message = ({sessionId}: Props) => {
     }
 
     return (
-        <div className='h-screen flex flex-col w-full'>
-            <div
-                className={clsx([
-                    "flex",
-                    "justify-between",
-                    "items-center",
-                    "p-4",
-                    "shadow-sm",
-                    "h-[6rem]"
-                ])}
-            >
-                <Popover width={100} position="bottom" withArrow shadow="sm">
-                    <Popover.Target>
-                        <Button 
-                        size="sm" 
-                        variant="subtle"
-                        className='px-1'
-                        rightIcon={<IconDotsVertical size="1rem"></IconDotsVertical>}
-                        >
-                            AI 助理
-                        </Button>
-                    </Popover.Target>
-                    <Popover.Dropdown>
-                        <Link href="/assistant">助理管理</Link>
-                    </Popover.Dropdown>
-                </Popover>
-                <AssistantSelect 
-                value={assistant?.id} 
-                onChange={onAddAssistantChange}>
-                </AssistantSelect>
-            </div>
-            <div 
-                className={clsx([
-                    'flex-col',
-                    'h-[calc(100vh-10rem)]',
-                    'w-full',
-                    'overflow-y-auto',
-                    'rounded-md',
-                    'px-8',
-                ])}
-            >
-                {message.map((item, index) => (
-                    <div key={`${item.role}-${index}`} className={clsx(
-                        {
-                            flex: item.role === 'user',
-                            'flex-col': item.role === 'user',
-                            'items-end': item.role === 'user',
-                        },
-                        "mt-4",
-                    )}>
-                        <div>{item.role}</div>
-                        <div
-                        className={clsx(
-                            'rounded-md',
-                            'shadow-md',
-                            'px-4',
-                            'py-2',
-                            'mt-1',
-                            'w-full',
-                            'max-w-4xl',
-                        )}
-                        >{item.content}</div>
-                    </div>
-                ))}
-            </div>
-            <div className='flex items-center w-3/5'>
+        <div className="flex flex-col h-screen w-full">
+          <div
+            className={clsx([
+              "flex",
+              "justify-between",
+              "items-center",
+              "p-4",
+              "shadow-sm",
+              "h-[6rem]",
+            ])}
+          >
+            <Popover width={100} position="bottom" withArrow shadow="sm">
+              <Popover.Target>
+                <Button
+                  size="sm"
+                  variant="subtle"
+                  className="px-1"
+                  rightIcon={<IconDotsVertical size="1rem"></IconDotsVertical>}
+                >
+                  AI 助理
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <Link href="/assistant" className="no-underline text-green-600">
+                  助理管理
+                </Link>
+              </Popover.Dropdown>
+            </Popover>
+            <AssistantSelect
+              value={assistant?.id!}
+              onChange={onAssistantChange}
+            ></AssistantSelect>
+            <ThemeSwitch></ThemeSwitch>
+          </div>
+    
+          <div
+            className={clsx([
+              "flex-col",
+              "h-[calc(100vh-10rem)]",
+              "w-full",
+              "overflow-y-auto",
+              "rounded-sm",
+              "px-8",
+            ])}
+          >
+            {message.map((item, idx) => {
+              const isUser = item.role === "user";
+    
+              return (
+                <div
+                  key={`${item.role}-${idx}`}
+                  className={clsx(
+                    {
+                      flex: item.role === "user",
+                      "flex-col": item.role === "user",
+                      "items-end": item.role === "user",
+                    },
+                    "mt-4",
+                  )}
+                >
+                  <div>
+                    {USERMAP[item.role]}
+                    {!isUser && idx === message.length - 1 && loading && (
+                      <Loader size="sm" variant="dots" className="ml-2" />
+                    )}
+                  </div>
+                  <div
+                    className={clsx(
+                      {
+                        "bg-gray-100": colorScheme === "light",
+                        "bg-zinc-700/40": colorScheme === "dark",
+                        "whitespace-break-spaces": isUser,
+                      },
+                      "rounded-md",
+                      "shadow-md",
+                      "px-4",
+                      "py-2",
+                      "mt-1",
+                      "w-full",
+                      "max-w-4xl",
+                      "min-h-[3rem]",
+                    )}
+                  >
+                    {isUser ? (
+                      <div>{item.content}</div>
+                    ) : (
+                      <Markdown markdownText={item.content}></Markdown>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div
+            className={clsx(
+              "flex",
+              "items-center",
+              "justify-center",
+              "self-end",
+              "my-4",
+              "w-full",
+            )}
+          >
             <ActionIcon
-             className='mr-2'
-             disabled={loading}
-             onClick={() => onClear()}
-             >
-                <IconEraser></IconEraser>
+              className="mr-2"
+              disabled={loading}
+              onClick={() => onClear()}
+            >
+              <IconEraser></IconEraser>
             </ActionIcon>
             <Textarea
-            className='w-full'
-            placeholder='Type a message...'
-            value={prompt}
-            disabled={loading}
-            onKeyDown={(event) => onKeyDown(event)}
-            onChange={(event) => setPrompt(event.target.value)}
-            >
-            </Textarea>
-            <ActionIcon
-             className='ml-2'
-             onClick={() => onSubmit()}
-             >
-                {
-                    loading ? <IconSendOff/> : <IconSend/>
-                }
-                </ActionIcon>
-            </div>
+              placeholder="Enter 发送消息；Shift + Enter 换行；"
+              className="w-3/5"
+              value={prompt}
+              disabled={loading}
+              onKeyDown={(evt) => onKeyDown(evt)}
+              onChange={(evt) => setPrompt(evt.target.value)}
+            ></Textarea>
+            <ActionIcon color="green" className="ml-2" onClick={() => onSubmit()}>
+              {loading ? <IconSendOff /> : <IconSend />}
+            </ActionIcon>
+          </div>
         </div>
-    );
+      );
 };
