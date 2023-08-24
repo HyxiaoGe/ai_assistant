@@ -47,6 +47,7 @@ class ChatService {
                 signal: this.controller.signal,
             });
             const data = resp.body;
+            console.log(data);
             if (!data) {
                 return;
             }
