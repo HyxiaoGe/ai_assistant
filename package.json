@@ -24,6 +24,7 @@
     "eslint-config-next": "13.4.8",
     "eventsource-parser": "^1.0.0",
     "highlight.js": "^11.8.0",
+	  "@types/marked": "^4.0.8",
     "marked": "^5.0.4",
     "next": "13.4.8",
     "postcss": "8.4.24",
