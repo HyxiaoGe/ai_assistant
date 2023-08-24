@@ -50,8 +50,10 @@ const requestStream = async (payload: StreamPayload) => {
     body: JSON.stringify(payload),
   });
   if (resp.status !== 200) {
+    console.log("failure", await resp.text());
     return resp.body;
   }
+  console.log("success", await resp.text());
   return createStream(resp, counter);
 };
 
