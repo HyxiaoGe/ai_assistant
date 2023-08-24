@@ -1,4 +1,3 @@
-import { type } from "os"
 import { Message } from "../types"
 
 type StreamParams = {
