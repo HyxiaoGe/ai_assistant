@@ -40,9 +40,8 @@ export default async function handler(
 }
 
 const requestStream = async (payload: StreamPayload) => {
-  console.log("token output", `${process.env.OPENAI_API_KEY}`)
   let counter = 0;
-  const resp = await fetch(`/v1/chat/completions`, {
+  const resp = await fetch("/v1/chat/completions", {
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
