@@ -41,7 +41,7 @@ export default async function handler(
 
 const requestStream = async (payload: StreamPayload) => {
   let counter = 0;
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const resp = await fetch(`${process.env.END_POINT}/v1/chat/completions`, {
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
@@ -50,10 +50,8 @@ const requestStream = async (payload: StreamPayload) => {
     body: JSON.stringify(payload),
   });
   if (resp.status !== 200) {
-    console.log("failure", await resp.text());
     return resp.body;
   }
-  console.log("success", await resp.text());
   return createStream(resp, counter);
 };
 
