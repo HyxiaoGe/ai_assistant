@@ -1,161 +1,183 @@
-import { KeyboardEvent, useEffect, useState } from 'react';
-import chatService from '@/utils/chatService';
-import { Loader, ActionIcon, Textarea, Button, Popover, useMantineColorScheme } from '@mantine/core';
-import Link from 'next/link';
-import { Assistant, MessageList } from '@/types';
-import clsx from 'clsx';
-import * as chatStorage from '@/utils/chatStorage';
-import { IconSend, IconSendOff, IconEraser,IconDotsVertical, IconHeadphones, IconHeadphonesOff } from '@tabler/icons-react';
-import { AssistantSelect } from '../AssistantSelect';
+import { useEffect, useState, KeyboardEvent } from "react";
+import chatService from "@/utils/chatService";
 import { Markdown } from "../Markdown";
-import { Voice } from '../Voice';
+import { Voice } from "../Voice";
+import {
+  ActionIcon,
+  Loader,
+  Textarea,
+  useMantineColorScheme,
+  Button,
+  Popover,
+} from "@mantine/core";
+import Link from "next/link";
+import * as chatStorage from "@/utils/chatStorage";
 import { ThemeSwitch } from "../ThemeSwitch";
 import { USERMAP } from "@/utils/constant";
 
+import { AssistantSelect } from "../AssistantSelect";
+import {
+  IconSend,
+  IconSendOff,
+  IconEraser,
+  IconDotsVertical,
+  IconHeadphones,
+  IconHeadphonesOff,
+} from "@tabler/icons-react";
+
+import { Assistant, MessageList } from "@/types";
+import clsx from "clsx";
+
 type Props = {
-    sessionId: string;
-}
+  sessionId: string;
+};
 
-export const Message = ({sessionId}: Props) => {
-    
-    const [prompt, setPrompt] = useState('');
-    const [loading, setLoading] = useState<boolean>(false);
-    const [message, setMessage] = useState<MessageList>([]);
-    const [assistant, setAssistant] = useState<Assistant>();
-    const [model, setModel] = useState<"text" | "voice">("text");
-    const { colorScheme } = useMantineColorScheme();
+export const Message = ({ sessionId }: Props) => {
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<MessageList>([]);
+  const [assistant, setAssistant] = useState<Assistant>();
+  const [mode, setMode] = useState<"text" | "voice">("text");
+  const { colorScheme } = useMantineColorScheme();
+  const updateMessage = (msg: MessageList) => {
+    setMessage(msg);
+    chatStorage.updateMessage(sessionId, msg);
+  };
+  chatService.actions = {
+    onCompleting: (sug) => setSuggestion(sug),
+    onCompleted: () => {
+      setLoading(false);
+    },
+  };
 
-    const updateMessage = (msg: MessageList) => {
-        setMessage(msg);
-        chatStorage.updateMessage(sessionId, msg);
+  useEffect(() => {
+    const session = chatStorage.getSession(sessionId);
+    setAssistant(session?.assistant);
+    const msg = chatStorage.getMessage(sessionId);
+    setMessage(msg);
+    if (loading) {
+      chatService.cancel();
     }
+  }, [sessionId, mode]);
 
-    chatService.actions = {
-        onCompleting: (sug) => setSuggestions(sug),
-        onCompleted: () => {
-            setLoading(false);
-        }
+  const onAssistantChange = (assistant: Assistant) => {
+    setAssistant(assistant);
+    chatStorage.updateSession(sessionId, {
+      assistant: assistant.id,
+    });
+  };
+
+  const onClear = () => {
+    updateMessage([]);
+  };
+  const onKeyDown = (evt: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (evt.keyCode === 13 && !evt.shiftKey) {
+      evt.preventDefault();
+      onSubmit();
     }
+  };
 
-    useEffect(() => {
-        const msg = chatStorage.getMessage(sessionId);
-        const session = chatStorage.getSession(sessionId);
-        if (session) {
-            setAssistant(session.assistant);
-        }
-
-        setMessage(msg);
-        if (loading) {
-            chatService.cancel();
-        }
-    }, [sessionId, model]);
-
-    const onAssistantChange = (assistant: Assistant) => {
-        setAssistant(assistant);
-        chatStorage.updateSession(sessionId, {
-            assistant: assistant.id,
-        });
+  const setSuggestion = (suggestion: string) => {
+    if (suggestion === "") return;
+    const len = message.length;
+    const lastMessage = len ? message[len - 1] : null;
+    let newList: MessageList = [];
+    if (lastMessage?.role === "assistant") {
+      newList = [
+        ...message.slice(0, len - 1),
+        {
+          ...lastMessage,
+          content: suggestion,
+        },
+      ];
+    } else {
+      newList = [
+        ...message,
+        {
+          role: "assistant",
+          content: suggestion,
+        },
+      ];
     }
+    setMessages(newList);
+  };
 
-    const onClear = () => {
-        updateMessage([]);
+  const setMessages = (msg: MessageList) => {
+    setMessage(msg);
+    chatStorage.updateMessage(sessionId, msg);
+  };
+
+  const onSubmit = () => {
+    if (loading) {
+      return chatService.cancel();
     }
+    if (!prompt.trim()) return;
+    let list: MessageList = [
+      ...message,
+      {
+        role: "user",
+        content: prompt,
+      },
+    ];
+    setMessages(list);
+    setLoading(true);
+    chatService.getStream({
+      prompt,
+      options: assistant,
+      history: list.slice(-assistant?.max_log!),
+    });
+    setPrompt("");
+  };
 
-    const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.keyCode === 13 && !event.shiftKey) {
-            event.preventDefault();
-            onSubmit();
-        }
-    };
-
-    const setSuggestions = (suggestions: string) => {
-
-        if (suggestions === '') return;
-        const len = message.length;
-        const lastMessage = len ? message[len - 1] : null;
-        let newList: MessageList = [];
-        if (lastMessage?.role === 'assistant') {
-            newList = [...message.slice(0, len - 1), {...lastMessage, content: suggestions}];
-        } else {
-            newList = [...message, {role: 'assistant', content: suggestions}];
-        }
-        setMessages(newList);
-    };
-
-    const setMessages = (msg: MessageList) => {
-        setMessage(msg);
-        chatStorage.updateMessage(sessionId, msg);
-    };
-
-    const onSubmit = () => {
-        if (loading) {
-            return chatService.cancel();
-        }
-        if (!prompt.trim()) return;
-        let list: MessageList = [
-            ...message,
-            {
-            role: "user",
-            content: prompt,
-            },
-        ];
-        setMessages(list);
-        setLoading(true);
-        chatService.getStream({
-            prompt, 
-            options: assistant,
-            history: list.slice(-assistant?.max_log!)
-        });
-        setPrompt("");
-    }
-
-    return (
-        <div className="flex flex-col h-screen w-full">
-          <div
-            className={clsx([
-              "flex",
-              "justify-between",
-              "items-center",
-              "p-4",
-              "shadow-sm",
-              "h-[6rem]",
-            ])}
+  return (
+    <div className="flex flex-col h-screen w-full">
+      <div
+        className={clsx([
+          "flex",
+          "justify-between",
+          "items-center",
+          "p-4",
+          "shadow-sm",
+          "h-[6rem]",
+        ])}
+      >
+        <Popover width={100} position="bottom" withArrow shadow="sm">
+          <Popover.Target>
+            <Button
+              size="sm"
+              variant="subtle"
+              className="px-1"
+              rightIcon={<IconDotsVertical size="1rem"></IconDotsVertical>}
+            >
+              AI 助理
+            </Button>
+          </Popover.Target>
+          <Popover.Dropdown>
+            <Link href="/assistant" className="no-underline text-green-600">
+              助理管理
+            </Link>
+          </Popover.Dropdown>
+        </Popover>
+        <div className="flex items-center">
+          <AssistantSelect
+            value={assistant?.id!}
+            onChange={onAssistantChange}
+          ></AssistantSelect>
+          <ActionIcon
+            size="sm"
+            onClick={() => setMode(mode === "text" ? "voice" : "text")}
           >
-            <Popover width={100} position="bottom" withArrow shadow="sm">
-              <Popover.Target>
-                <Button
-                  size="sm"
-                  variant="subtle"
-                  className="px-1"
-                  rightIcon={<IconDotsVertical size="1rem"></IconDotsVertical>}
-                >
-                  AI 助理
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown>
-                <Link href="/assistant" className="no-underline text-green-600">
-                  助理管理
-                </Link>
-              </Popover.Dropdown>
-            </Popover>
-            <div className="flex items-center">
-            <AssistantSelect
-              value={assistant?.id!}
-              onChange={onAssistantChange}
-            ></AssistantSelect>
-            <ActionIcon size="sm" onClick={() => setModel(model === "text" ? "voice" : "text")}>
-              {model === "text" ? (
-                <IconHeadphones color="green" size="1rem"></IconHeadphones>
-              ) : (
-                <IconHeadphonesOff color="gray" size="1rem"></IconHeadphonesOff>
-              )}
-            </ActionIcon>
-            </div>
-            <ThemeSwitch></ThemeSwitch>
-          </div>
-    
-            {model === "text" ? (
-<>
+            {mode === "text" ? (
+              <IconHeadphones color="green" size="1rem"></IconHeadphones>
+            ) : (
+              <IconHeadphonesOff color="gray" size="1rem"></IconHeadphonesOff>
+            )}
+          </ActionIcon>
+        </div>
+        <ThemeSwitch></ThemeSwitch>
+      </div>
+      {mode === "text" ? (
+        <>
           <div
             className={clsx([
               "flex-col",
@@ -168,7 +190,7 @@ export const Message = ({sessionId}: Props) => {
           >
             {message.map((item, idx) => {
               const isUser = item.role === "user";
-    
+
               return (
                 <div
                   key={`${item.role}-${idx}`}
@@ -239,17 +261,20 @@ export const Message = ({sessionId}: Props) => {
               onKeyDown={(evt) => onKeyDown(evt)}
               onChange={(evt) => setPrompt(evt.target.value)}
             ></Textarea>
-            <ActionIcon color="green" className="ml-2" onClick={() => onSubmit()}>
+            <ActionIcon
+              color="green"
+              className="ml-2"
+              onClick={() => onSubmit()}
+            >
               {loading ? <IconSendOff /> : <IconSend />}
             </ActionIcon>
           </div>
-</>
-            ) : (
-              <div className="h-[calc(100vh-6rem)] w-full">
-                <Voice></Voice>
-                </div>
-            )}
-
+        </>
+      ) : (
+        <div className="h-[calc(100vh-6rem)] w-full">
+          <Voice sessionId={sessionId} assistant={assistant!}></Voice>
         </div>
-      );
+      )}
+    </div>
+  );
 };

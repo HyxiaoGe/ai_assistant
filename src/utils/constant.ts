@@ -20,3 +20,5 @@ export const USERMAP = {
     assistant: "🤖",
     system: "🕸",
   };
+
+export const OPENAI_END_POINT = "https://api.openai.com";
