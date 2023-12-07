@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { Assistant, MessageList } from '@/types';
 import clsx from 'clsx';
 import * as chatStorage from '@/utils/chatStorage';
-import { IconSend, IconSendOff, IconEraser,IconDotsVertical } from '@tabler/icons-react';
+import { IconSend, IconSendOff, IconEraser,IconDotsVertical, IconHeadphones, IconHeadphonesOff } from '@tabler/icons-react';
 import { AssistantSelect } from '../AssistantSelect';
 import { Markdown } from "../Markdown";
+import { Voice } from '../Voice';
 import { ThemeSwitch } from "../ThemeSwitch";
 import { USERMAP } from "@/utils/constant";
 
@@ -21,6 +22,7 @@ export const Message = ({sessionId}: Props) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [message, setMessage] = useState<MessageList>([]);
     const [assistant, setAssistant] = useState<Assistant>();
+    const [model, setModel] = useState<"text" | "voice">("text");
     const { colorScheme } = useMantineColorScheme();
 
     const updateMessage = (msg: MessageList) => {
@@ -46,7 +48,7 @@ export const Message = ({sessionId}: Props) => {
         if (loading) {
             chatService.cancel();
         }
-    }, [sessionId]);
+    }, [sessionId, model]);
 
     const onAssistantChange = (assistant: Assistant) => {
         setAssistant(assistant);
@@ -136,13 +138,24 @@ export const Message = ({sessionId}: Props) => {
                 </Link>
               </Popover.Dropdown>
             </Popover>
+            <div className="flex items-center">
             <AssistantSelect
               value={assistant?.id!}
               onChange={onAssistantChange}
             ></AssistantSelect>
+            <ActionIcon size="sm" onClick={() => setModel(model === "text" ? "voice" : "text")}>
+              {model === "text" ? (
+                <IconHeadphones color="green" size="1rem"></IconHeadphones>
+              ) : (
+                <IconHeadphonesOff color="gray" size="1rem"></IconHeadphonesOff>
+              )}
+            </ActionIcon>
+            </div>
             <ThemeSwitch></ThemeSwitch>
           </div>
     
+            {model === "text" ? (
+<>
           <div
             className={clsx([
               "flex-col",
@@ -230,6 +243,13 @@ export const Message = ({sessionId}: Props) => {
               {loading ? <IconSendOff /> : <IconSend />}
             </ActionIcon>
           </div>
+</>
+            ) : (
+              <div className="h-[calc(100vh-6rem)] w-full">
+                <Voice></Voice>
+                </div>
+            )}
+
         </div>
       );
 };
